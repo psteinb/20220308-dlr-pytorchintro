@@ -42,16 +42,56 @@ def load_data(
     return train_loader, test_loader
 
 
+import torch.nn as nn
+import torch.nn.functional as F
+
+
+class MyNetwork(nn.Module):
+    """a very basic relu neural network involving conv, dense, max_pool and dropout layers"""
+
+    def __init__(self):
+        super(MyNetwork, self).__init__()
+        self.conv1 = nn.Conv2d(1, 32, 3, 1)
+        self.conv2 = nn.Conv2d(32, 64, 3)
+
+        self.dropout1 = nn.Dropout(0.25)
+        self.dropout2 = nn.Dropout(0.5)
+
+        self.fc1 = nn.Linear(9216, 128)
+        self.fc2 = nn.Linear(128, 10)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = F.relu(x)
+
+        x = self.conv2(x)
+        x = F.relu(x)
+
+        x = F.max_pool2d(x, 2)
+        x = self.dropout1(x)
+        x = torch.flatten(x, 1)
+
+        x = self.fc1(x)
+        x = F.relu(x)
+        x = self.dropout2(x)
+        x = self.fc2(x)
+
+        # x.shape = (batchsize, 10)
+        output = F.log_softmax(x, dim=1)
+
+        return output
+
+
 def main(somepath="./pytorch-data"):
-    """load the data set and check the average and stddev of intensity (images are just tensors)"""
+    """load the data set and run a random init CNN on it"""
 
     train_loader, test_loader = load_data(somepath)
 
     batch_image = None
     batch_label = None
 
-    for batch_idx, (X, Y) in enumerate(train_loader):
-        print("train", batch_idx, X.shape, Y.shape)
+    for batch_idx, (X, y) in enumerate(train_loader):
+        print("train", batch_idx, X.shape, y.shape)
 
         batch_image = X
         batch_label = y
@@ -61,6 +101,11 @@ def main(somepath="./pytorch-data"):
     model = MyNetwork()
 
     output = model(batch_image)
+    assert len(output.shape) > 1
+    assert output.shape[0] == batch_label.shape[0]
+
+    prediction = output.argmax(dim=1)
+    assert prediction.shape == batch_label.shape
 
 
 if __name__ == "__main__":
