@@ -19,7 +19,7 @@ def main(somepath="./pytorch-data"):
     for img in imglist:
         timages.append(trf(img))
 
-    batch = torch.concat(timages)
+    batch = torch.concat(timages)  # or torch.cat to be backwards compatible
     assert len(batch.shape) == 3
     assert batch.shape == (32, 28, 28)
 
