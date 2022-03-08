@@ -88,8 +88,15 @@ import torch.optim as optim
 def main(somepath="./pytorch-data"):
     """load the data set and run a random init CNN on it"""
 
-    train_loader, test_loader = load_data(somepath)
-    model = MyNetwork()
+    # is a GPU available?
+    cuda_present = torch.cuda.is_available()
+    ndevices = torch.cuda.device_count()
+    use_cuda = cuda_present and ndevices > 0
+    device = torch.device("cuda" if use_cuda else "cpu")  # "cuda:0" ... default device
+    # "cuda:1" would be GPU index 1, "cuda:2" etc
+
+    train_loader, test_loader = load_data(somepath, use_cuda=use_cuda)
+    model = MyNetwork().to(device)
 
     optimizer = optim.Adadelta(model.parameters(), lr=1.0)
     max_nepochs = 1
@@ -103,7 +110,10 @@ def main(somepath="./pytorch-data"):
 
         for batch_idx, (X, y) in enumerate(train_loader):
             # print("train", batch_idx, X.shape, y.shape)
-
+            X, y = X.to(device), y.to(device)
+            # download from GPU to CPU: X_cpu = X.cpu()
+            # download from GPU to CPU: X_cpu = X.to(torch.device("cpu"))
+            # download from GPU to CPU: X_cpu = X.detach().numpy()
             optimizer.zero_grad()
 
             prediction = model(X)
